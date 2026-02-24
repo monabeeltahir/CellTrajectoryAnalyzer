@@ -53,7 +53,7 @@ def plot_exponential_parameter_histograms(
 
         # y_inf
         plt.figure(figsize=(10, 6))
-        plt.hist(y_inf, bins=bins)
+        plt.hist(y_inf, bins=bins, density=True)
         plt.title("Experiment: Asymptotic Deflection (y_inf)")
         plt.xlabel("y_inf (pixels)")
         plt.ylabel("Count")
@@ -63,7 +63,7 @@ def plot_exponential_parameter_histograms(
 
         # a
         plt.figure(figsize=(10, 6))
-        plt.hist(a_vals, bins=bins)
+        plt.hist(a_vals, bins=bins, density=True)
         plt.title("Experiment: Rate Constant (a)")
         plt.xlabel("a (1/pixel)")
         plt.ylabel("Count")
@@ -74,7 +74,7 @@ def plot_exponential_parameter_histograms(
         # tau
         plt.figure(figsize=(10, 6))
         finite_tau = tau_vals[np.isfinite(tau_vals)]
-        plt.hist(finite_tau, bins=bins)
+        plt.hist(finite_tau, bins=bins, density=True)
         plt.title("Experiment: Length Constant (tau = 1/a)")
         plt.xlabel("tau (pixels)")
         plt.ylabel("Count")
@@ -84,7 +84,7 @@ def plot_exponential_parameter_histograms(
 
         # R^2
         plt.figure(figsize=(10, 6))
-        plt.hist(r2_vals, bins=bins)
+        plt.hist(r2_vals, bins=bins, density=True)
         plt.title("Experiment: Exponential Fit R²")
         plt.xlabel("R²")
         plt.ylabel("Count")

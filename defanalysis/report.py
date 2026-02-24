@@ -88,12 +88,22 @@ def summarize_results(
     return out
 
 
+import os
+import csv
+from datetime import datetime
+
 def print_report(summary, output_folder):
+
+    os.makedirs(output_folder, exist_ok=True)
+
+    # ========================
+    # PRINT TO CONSOLE
+    # ========================
+
     print("\n" + "=" * 40)
     print("📊 FINAL STATISTICS REPORT")
     print("=" * 40)
 
-    # --- Slope report (existing) ---
     print(f"⚙️  Mode: {summary.get('mode_name','')}")
     print("-" * 40)
     print(f"✅ Total particles: {summary['num_total']}")
@@ -109,16 +119,17 @@ def print_report(summary, output_folder):
     print(f"Control Median:        {summary['ctrl_median']:.5f}")
     print(f"Control Noise Width:   {summary['noise_width']:.5f}")
 
-    # --- Optional a-gate report ---
+    # Optional exponential section
     if "a_gate" in summary:
         a = summary["a_gate"]
+
         print("\n" + "-" * 40)
         print("📉 EXPONENTIAL DECAY-RATE (a) GATING")
         print("-" * 40)
         print(f"⚙️  Mode: {a.get('mode_name','')}")
         print(f"✅ Tracks with valid exp fit (CTRL/EXP): {a['ctrl_n']} / {a['exp_n']}")
-        print(f"❌ Deflected by a-gate (> {a['gate_threshold']:.6g}): {a['num_deflected']}/{a['num_total']} "
-              f"({a['percent_deflected']:.3f}%)")
+        print(f"❌ Deflected by a-gate (> {a['gate_threshold']:.6g}): "
+              f"{a['num_deflected']}/{a['num_total']} ({a['percent_deflected']:.3f}%)")
         print("-" * 40)
         print(f"Experiment a Mean:   {a['exp_mean']:.6g}")
         print(f"Experiment a STD:    {a['exp_std']:.6g}")
@@ -132,3 +143,47 @@ def print_report(summary, output_folder):
     print("-" * 40)
     print(f"📂 Results saved to: {output_folder}")
     print("=" * 40 + "\n")
+
+    # ========================
+    # SAVE TEXT VERSION
+    # ========================
+
+    text_path = os.path.join(output_folder, "final_statistics_report.txt")
+
+    with open(text_path, "w") as f:
+        f.write("=" * 40 + "\n")
+        f.write("FINAL STATISTICS REPORT\n")
+        f.write("=" * 40 + "\n")
+
+        for k, v in summary.items():
+            f.write(f"{k}: {v}\n")
+
+    # ========================
+    # SAVE CSV VERSION
+    # ========================
+
+    csv_path = os.path.join(output_folder, "final_statistics_report.csv")
+
+    # Flatten summary dict (including a_gate if exists)
+    flat_summary = {}
+
+    for key, value in summary.items():
+        if isinstance(value, dict):
+            for sub_key, sub_val in value.items():
+                flat_summary[f"{key}_{sub_key}"] = sub_val
+        else:
+            flat_summary[key] = value
+
+    # Add timestamp for reproducibility
+    flat_summary["timestamp"] = datetime.now().isoformat()
+
+    # Write CSV (append if exists)
+    file_exists = os.path.isfile(csv_path)
+
+    with open(csv_path, "a", newline="") as csvfile:
+        writer = csv.DictWriter(csvfile, fieldnames=flat_summary.keys())
+
+        if not file_exists:
+            writer.writeheader()
+
+        writer.writerow(flat_summary)
