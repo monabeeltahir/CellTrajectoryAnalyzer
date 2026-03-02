@@ -1,72 +1,37 @@
 import numpy as np
-from scipy.stats import linregress
 from scipy.optimize import curve_fit
 import pandas as pd
 import os
+from expfit import _fit_exp_saturating
+from pfit import _fit_quadratic
+from linfit import _fit_linear
 
+# -----------------------------
+# Registry: add new fits here later
+# Each fitter returns dict of params including r2
+# -----------------------------
+FIT_REGISTRY = {
+    "lin": _fit_linear,
+    "exp": _fit_exp_saturating,
+    "quad": _fit_quadratic,
+}
 
-
-def _exp_saturating(x, y0, A, a, x0):
-    return y0 + A * (1.0 - np.exp(-a * (x - x0)))
-
-def _fit_exp_saturating(x, y):
-    x = np.asarray(x, dtype=float)
-    y = np.asarray(y, dtype=float)
-
-    order = np.argsort(x)
-    x = x[order]
-    y = y[order]
-
-    x0 = float(x.min())
-
-    # initial guesses
-    y0_guess = float(np.median(y[:max(3, len(y)//10)]))
-    y_end = float(np.median(y[-max(3, len(y)//10):]))
-    A_guess = y_end - y0_guess
-    if abs(A_guess) < 1e-6:
-        A_guess = 1.0
-
-    y_target = y0_guess + 0.632 * A_guess
-    idx = int(np.argmin(np.abs(y - y_target)))
-    dx = float(x[idx] - x0)
-    a_guess = 1.0 / max(dx, 1.0)
-
-    def f(x_in, y0, A, a):
-        return _exp_saturating(x_in, y0, A, a, x0)
-
-    bounds = ([-np.inf, -np.inf, 0.0], [np.inf, np.inf, np.inf])
-
-    popt, _ = curve_fit(
-        f, x, y,
-        p0=[y0_guess, A_guess, a_guess],
-        bounds=bounds,
-        maxfev=20000
-    )
-    y0_fit, A_fit, a_fit = map(float, popt)
-
-    y_inf = y0_fit + A_fit
-    tau_px = (1.0 / a_fit) if a_fit > 0 else float("inf")
-
-    y_pred = f(x, y0_fit, A_fit, a_fit)
-    ss_res = float(np.sum((y - y_pred) ** 2))
-    ss_tot = float(np.sum((y - np.mean(y)) ** 2)) + 1e-12
-    r2 = 1.0 - ss_res / ss_tot
-
-    return {
-        "y0": y0_fit,
-        "A": A_fit,
-        "a": a_fit,
-        "x0": x0,
-        "y_inf": y_inf,
-        "tau_px": tau_px,
-        "r2_exp": float(r2),
-    }
-
-def compute_track_stats(df, min_track_length=10, fit_exponential=False, min_x_span_px=30):
+def compute_track_stats(
+    df,
+    min_track_length=10,
+    fits=("lin",),                 # e.g. ("lin","exp","quad")
+    min_x_span_px=30,
+        ):
     """
     df must have columns: id, frame, center_x, center_y
+
+    fits: tuple/list of fit names from FIT_REGISTRY:
+      - "lin"
+      - "exp"
+      - "quad"
+
     Returns list of dicts with:
-      id, slope_raw, slope_inverted, intercept, x_vals, y_vals
+      id, x_vals, y_vals, and per-fit scalar outputs stored with prefixes.
     """
     track_stats = []
 
@@ -75,80 +40,86 @@ def compute_track_stats(df, min_track_length=10, fit_exponential=False, min_x_sp
             continue
 
         track = track.sort_values("frame")
-        x = track["center_x"].to_numpy()
-        y = track["center_y"].to_numpy()
+        x = track["center_x"].to_numpy(dtype=float)
+        y = track["center_y"].to_numpy(dtype=float)
 
-        slope, intercept, r_val, _, _ = linregress(x, y)
-        slope_inverted = -1.0 * slope
-       
-        exp_ok = False
-        exp_reason = "not_run"
+        # basic sanity check (optional)
+        x_span = float(np.max(x) - np.min(x))
 
-        y0_fit = A_fit = x0_fit = None
-        y_inf = a = tau_px = r2_exp = None
-
-        if fit_exponential:
-            try:
-                ef = _fit_exp_saturating(x, y)  # should return dict with: y0, A, x0, y_inf, a, tau_px, r2_exp
-                # basic sanity checks
-                if not np.isfinite(ef["y0"]) or not np.isfinite(ef["A"]) or not np.isfinite(ef["a"]) or not np.isfinite(ef["x0"]):
-                    raise ValueError("non_finite_parameters")
-
-                exp_ok = True
-                exp_reason = "ok"
-
-                y0_fit = float(ef["y0"])
-                A_fit  = float(ef["A"])
-                x0_fit = float(ef["x0"])
-
-                y_inf  = float(ef["y_inf"])
-                a      = float(ef["a"])
-                tau_px = float(ef["tau_px"])
-                r2_exp = float(ef["r2_exp"])
-
-            except Exception as e:
-                exp_ok = False
-                exp_reason = f"fit_failed:{type(e).__name__}"
-        
-        
-        # if fit_exponential and (x.max() - x.min()) >= min_x_span_px:
-        #     try:
-        #         ef = _fit_exp_saturating(x, y)
-        #         exp_ok = True
-        #         y0_fit = ef["y0"]
-        #         A_fit  = ef["A"]
-                
-        #         x0_fit = ef["x0"]
-        #         y_inf = ef["y_inf"]
-        #         a = ef["a"]
-        #         tau_px = ef["tau_px"]
-        #         r2_exp = ef["r2_exp"]
-        #     except Exception:
-        #         exp_ok = False
-
-        
-        track_stats.append({
+        out = {
             "id": obj_id,
             "x_vals": x,
             "y_vals": y,
+        }
 
-            # linear fields you already have...
-            "slope_raw": float(slope),
-            "slope_inverted": float(slope_inverted),
-            "intercept": float(intercept),
-            "r2_lin": float(r_val**2),
+        for fit_name in fits:
+            if fit_name not in FIT_REGISTRY:
+                out[f"{fit_name}_ok"] = False
+                out[f"{fit_name}_reason"] = "unknown_fit"
+                continue
 
-            # exponential fields
-            "exp_ok": exp_ok,
-            "exp_reason": exp_reason,
-            "y0_exp": y0_fit,
-            "A_exp": A_fit,
-            "x0_exp": x0_fit,
-            "y_inf": y_inf,
-            "a": a,
-            "tau_px": tau_px,
-            "r2_exp": r2_exp,
-            })
+            # Example: skip exp if x-span too short (keep rule generic)
+            if fit_name in ("exp", "quad") and x_span < min_x_span_px:
+                out[f"{fit_name}_ok"] = False
+                out[f"{fit_name}_reason"] = f"x_span_too_small<{min_x_span_px}"
+                continue
+
+            try:
+                params = FIT_REGISTRY[fit_name](x, y)
+
+                # require finite numbers for all params except maybe inf tau
+                # (you can relax this if you want)
+                for k, v in params.items():
+                    if v is None:
+                        continue
+                    if isinstance(v, (int, float)) and (not np.isfinite(v)):
+                        # allow tau_px to be inf
+                        if not (fit_name == "exp" and k == "tau_px" and v == float("inf")):
+                            raise ValueError(f"non_finite:{k}")
+
+                out[f"{fit_name}_ok"] = True
+                out[f"{fit_name}_reason"] = "ok"
+
+                # store params with prefix
+                for k, v in params.items():
+                    out[f"{fit_name}_{k}"] = v
+
+            except Exception as e:
+                out[f"{fit_name}_ok"] = False
+                out[f"{fit_name}_reason"] = f"fit_failed:{type(e).__name__}"
+
+        # Convenience fields (keep your old ones if you like)
+        # slope_inverted is meaningful only if linear fit ran
+        if out.get("lin_ok", False):
+            out["slope_raw"] = float(out["lin_slope"])
+            out["slope_inverted"] = float(-1.0 * out["lin_slope"])
+            out["intercept"] = float(out["lin_intercept"])
+            out["r2_lin"] = float(out["lin_r2"])
+        else:
+            out["slope_raw"] = np.nan
+            out["slope_inverted"] = np.nan
+            out["intercept"] = np.nan
+            out["r2_lin"] = np.nan
+
+        # Backward-compatible exp fields (optional, if you want same keys)
+        if out.get("exp_ok", False):
+            out["y0_exp"] = out.get("exp_y0", np.nan)
+            out["A_exp"]  = out.get("exp_A", np.nan)
+            out["x0_exp"] = out.get("exp_x0", np.nan)
+            out["y_inf"]  = out.get("exp_y_inf", np.nan)
+            out["a"]      = out.get("exp_a", np.nan)
+            out["tau_px"] = out.get("exp_tau_px", np.nan)
+            out["r2_exp"] = out.get("exp_r2", np.nan)
+        else:
+            out["y0_exp"] = np.nan
+            out["A_exp"]  = np.nan
+            out["x0_exp"] = np.nan
+            out["y_inf"]  = np.nan
+            out["a"]      = np.nan
+            out["tau_px"] = np.nan
+            out["r2_exp"] = np.nan
+
+        track_stats.append(out)
 
     return track_stats
 
@@ -161,29 +132,20 @@ def extract_slopes(track_stats):
 def save_track_parameters(track_stats, out_path):
     """
     Save scalar track parameters (no x/y arrays) to CSV.
+    Automatically includes any new fit outputs you add later.
     """
     rows = []
-
     for t in track_stats:
-        rows.append({
-            "id": t.get("id"),
+        row = {}
+        for k, v in t.items():
+            if k in ("x_vals", "y_vals"):
+                continue
+            # skip non-scalars
+            if isinstance(v, (list, tuple, np.ndarray)):
+                continue
+            row[k] = v
+        rows.append(row)
 
-            # linear
-            "slope_raw": float(t.get("slope_raw", np.nan)),
-            "slope_inverted": float(t.get("slope_inverted", np.nan)),
-            "intercept": float(t.get("intercept", np.nan)),
-            "r2_lin": float(t.get("r2_lin", np.nan)),
-
-            # exponential
-            "exp_ok": bool(t.get("exp_ok", False)),
-            "y0_exp": float(t.get("y0_exp", np.nan)),
-            "A_exp": float(t.get("A_exp", np.nan)),
-            "a": float(t.get("a", np.nan)),
-            "tau_px": float(t.get("tau_px", np.nan)),
-            "y_inf": float(t.get("y_inf", np.nan)),
-            "r2_exp": float(t.get("r2_exp", np.nan)),
-        })
-
-    df = pd.DataFrame(rows)
+    df_out = pd.DataFrame(rows)
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
-    df.to_csv(out_path, index=False)
+    df_out.to_csv(out_path, index=False)

@@ -15,12 +15,12 @@ if __name__ == "__main__":
             print("Running File: ", videofilename)
             videopath = datapath[i]+videofilename
 
-            TrajctoryPlot(min_frames=150, FileName = videopath[:-4]+"/"+"id_tracking_trajectories.csv", FolderName=videopath[:-4], gray_image_path=videopath[:-4]+"/GrayImage.png", 
-            do_tilt_correction=True,   save_corrected_plot=True,  # IMPORTANT
-            tilt_method="scharr_ransac",
-            tilt_roi="both",              # for "sobel": "top"/"bottom"; for ridge_mode: "top"/"bottom"/"both"
-            tilt_mode="both_midline",        # used only when tilt_method="ridge_mode"
-            )
+            # TrajctoryPlot(min_frames=150, FileName = videopath[:-4]+"/"+"id_tracking_trajectories.csv", FolderName=videopath[:-4], gray_image_path=videopath[:-4]+"/GrayImage.png", 
+            # do_tilt_correction=True,   save_corrected_plot=True,  # IMPORTANT
+            # tilt_method="scharr_ransac",
+            # tilt_roi="both",              # for "sobel": "top"/"bottom"; for ridge_mode: "top"/"bottom"/"both"
+            # tilt_mode="both_midline",        # used only when tilt_method="ridge_mode"
+            # )
     for vids in videofillist:
         contrlvidpath = datapath[1]+vids 
         expervidpath = datapath[0]+vids
