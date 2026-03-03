@@ -2,9 +2,9 @@ import numpy as np
 from scipy.optimize import curve_fit
 import pandas as pd
 import os
-from expfit import _fit_exp_saturating
-from pfit import _fit_quadratic
-from linfit import _fit_linear
+from .expfit import _fit_exp_saturating
+from .pfit import _fit_quadratic
+from .linfit import _fit_linear
 
 # -----------------------------
 # Registry: add new fits here later
@@ -118,6 +118,17 @@ def compute_track_stats(
             out["a"]      = np.nan
             out["tau_px"] = np.nan
             out["r2_exp"] = np.nan
+    #Quadratic parameters
+        if out.get("quad_ok", False):
+            out["a2_quad"] = out.get("quad_a2", np.nan)
+            out["b1_quad"] = out.get("quad_b1", np.nan)
+            out["c0_quad"] = out.get("quad_c0", np.nan)
+            out["r2_quad"] = out.get("quad_r2", np.nan)
+        else:
+            out["a2_quad"] = np.nan
+            out["b1_quad"] = np.nan
+            out["c0_quad"] = np.nan
+            out["r2_quad"] = np.nan
 
         track_stats.append(out)
 

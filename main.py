@@ -4,9 +4,9 @@ from defanalysis import DefAnalysis_Dynamic
 # === Run the function ===
 if __name__ == "__main__":
     #videofilename = "No Magnetic Beads Cells 5uL_min.mp4"
-    datapath = ['C:/Users/mt1102/Box/Nabeel Tahir Meetings/Meetings/Weekly Meetings/Meeting Jan 2026/Experiment 1_14_2026/Sample 1/Stained/', 
-                'C:/Users/mt1102/Box/Nabeel Tahir Meetings/Meetings/Weekly Meetings/Meeting Jan 2026/Experiment 1_14_2026/Sample 1/Unstained/']
-    videofillist = ["S1 V1 2uL.mp4"]
+    datapath = ['C:/Users/mt1102/Box/Nabeel Tahir Meetings/Meetings/Weekly Meetings/Meeting Jan 2026/Experiment 1_14_2026/Sample 2/Stained/', 
+                'C:/Users/mt1102/Box/Nabeel Tahir Meetings/Meetings/Weekly Meetings/Meeting Jan 2026/Experiment 1_14_2026/Sample 2/Unstained/']
+    videofillist = ["S2 V1 2uL.mp4"]
     #videofillist = ["S1 V1 2uL.mp4","S1 V1 3uL.mp4", "S1 V2 3uL.mp4", "S1 V2 4uL.mp4", "S1 V2 5uL.mp4"]
     for i in range(2):
         print ("Running Path: ",  datapath[i])
@@ -29,6 +29,6 @@ if __name__ == "__main__":
         #print(df.columns)
         DefAnalysis_Dynamic(ExperimentFile= expervidpath[:-4]+"/"+"filtered_trajectories_corrected.csv",  
                             ControlFile = contrlvidpath[:-4]+"/"+"filtered_trajectories_corrected.csv", OutputFolder=expervidpath[:-4], 
-                            min_track_length = 40, sensitivity=99, correct_baseline_drift=False, fit_exponential_exp=True,
+                            min_track_length = 40, sensitivity=99, correct_baseline_drift=False, fit_exponential_exp=False,
                     exp_min_x_span_px=40, CntrlOutputFolder= contrlvidpath[:-4])
 

@@ -2,6 +2,7 @@ import os
 import numpy as np
 import pandas as pd
 
+from .plottrajectoryoverlays import plot_fit_diagnostics
 from .io import ensure_dir, load_tracks_csv, save_summary_csv
 from .track_stats import compute_track_stats, extract_slopes, save_track_parameters
 from .gating import compute_gate, classify_tracks, percentile_clip
@@ -14,39 +15,74 @@ def _save_params(stats, out_folder, name):
     save_track_parameters(stats, os.path.join(out_folder, name))
 
 
-def _gate_plot_and_classify(
-    ctrl_feat,
-    exp_feat,
+def _extract_feature(stats, key, ok_key=None):
+    """
+    Extract a scalar numeric feature from track_stats.
+    If ok_key is provided, keep only tracks where t[ok_key] is True.
+    """
+    vals = []
+    for t in stats:
+        if ok_key is not None and not t.get(ok_key, False):
+            continue
+        v = t.get(key, None)
+        if v is None:
+            continue
+        vals.append(v)
+
+    arr = np.asarray(vals, dtype=float)
+    arr = arr[np.isfinite(arr)]
+    return arr
+
+
+def _gate_plot_and_classify_feature(
+    ctrl_stats,
     exp_stats,
     out_folder,
     *,
+    feature_key,
+    ok_key=None,
     sensitivity,
     correct_baseline_drift,
     bin_count,
     png_name,
     csv_name,
-    feature_key=None,
     xlabel=None,
     title=None,
+    clip_low=0.1,
+    clip_high=99.9,
     use_logx=False,
 ):
     """
-    Generic helper: compute gate -> plot histogram -> classify exp tracks -> save CSV.
-    If feature_key is None, classify_tracks defaults to slope_inverted (existing behavior).
+    For a given feature:
+      - extract feature arrays from ctrl/exp
+      - percentile clip for robustness
+      - compute gate
+      - plot histogram with your plot_histogram()
+      - classify exp tracks using feature_key
+      - save per-feature summary CSV
     """
+    ctrl = _extract_feature(ctrl_stats, feature_key, ok_key=ok_key)
+    exp  = _extract_feature(exp_stats,  feature_key, ok_key=ok_key)
+
+    if ctrl.size == 0 or exp.size == 0:
+        print(f"[WARN] Not enough data for feature '{feature_key}' (ok_key={ok_key}). Skipping.")
+        return None, None, []
+
+    ctrl_plot = percentile_clip(ctrl, low=clip_low, high=clip_high)
+    exp_plot  = percentile_clip(exp,  low=clip_low, high=clip_high)
+
     gate, metrics = compute_gate(
-        ctrl_feat,
-        exp_feat,
+        ctrl_plot, exp_plot,
         sensitivity=sensitivity,
         correct_baseline_drift=correct_baseline_drift
     )
 
     plot_histogram(
-        ctrl_feat, exp_feat, gate, metrics,
+        ctrl_plot, exp_plot, gate, metrics,
         out_path=os.path.join(out_folder, png_name),
         bin_count=bin_count,
         correct_baseline_drift=correct_baseline_drift,
-        xlabel=xlabel,
+        xlabel=xlabel or feature_key,
         title=title,
         use_logx=use_logx,
         eps=1e-12,
@@ -54,18 +90,10 @@ def _gate_plot_and_classify(
         prc=(0.5, 99.5),
     )
 
-    rows = classify_tracks(exp_stats, gate, feature_key=feature_key) if feature_key else classify_tracks(exp_stats, gate)
+    rows = classify_tracks(exp_stats, gate, feature_key=feature_key)
     pd.DataFrame(rows).to_csv(os.path.join(out_folder, csv_name), index=False)
 
-    return gate, metrics, rows
-
-
-def _extract_valid_feature(stats, key):
-    arr = np.array(
-        [t.get(key) for t in stats if t.get("exp_ok", False) and t.get(key) is not None],
-        dtype=float
-    )
-    return arr[np.isfinite(arr)]
+    return gate, metrics, rows, ctrl_plot, exp_plot 
 
 
 def DefAnalysis_Dynamic(
@@ -76,7 +104,7 @@ def DefAnalysis_Dynamic(
     min_track_length=10,
     sensitivity=99.9,
     bin_count=500,
-    correct_baseline_drift=False,      # True means baseline is CONTROL? (keeping your comment/behavior)
+    correct_baseline_drift=False,
     max_traj_lines=1000,
     fit_exponential_exp=True,
     exp_min_x_span_px=30,
@@ -96,17 +124,23 @@ def DefAnalysis_Dynamic(
     # -------------------------
     # Compute track stats
     # -------------------------
+    fits = ["lin"]
+    if fit_exponential_exp:
+        fits.append("exp")
+    fits.append("quad")
+
     ctrl_stats = compute_track_stats(
         df_ctrl,
         min_track_length=min_track_length,
-        fit_exponential=fit_exponential_exp,
-        min_x_span_px=exp_min_x_span_px,   # keep consistent gate rule
+        fits=fits,
+        min_x_span_px=exp_min_x_span_px
     )
+
     exp_stats = compute_track_stats(
         df_exp,
         min_track_length=min_track_length,
-        fit_exponential=fit_exponential_exp,
-        min_x_span_px=exp_min_x_span_px,
+        fits=fits,
+        min_x_span_px=exp_min_x_span_px
     )
 
     if not ctrl_stats or not exp_stats:
@@ -120,7 +154,7 @@ def DefAnalysis_Dynamic(
     _save_params(exp_stats,  OutputFolder,      "track_parameters_experiment.csv")
 
     # -------------------------
-    # Primary gating on slope
+    # Primary gating on slope (existing)
     # -------------------------
     ctrl_slopes = extract_slopes(ctrl_stats)
     exp_slopes  = extract_slopes(exp_stats)
@@ -149,8 +183,44 @@ def DefAnalysis_Dynamic(
     )
 
     # -------------------------
-    # Optional: exponential "a" gating + parameter histograms
+    # Extra histograms + gates for ALL fits
     # -------------------------
+    extra_plots = {}
+    feature_gates = {}   # ✅ collect everything here
+    # ---- Quadratic parameter gates/histograms (CTRL vs EXP) ----
+    # Requires: quad_ok + quad_a2, quad_b1, quad_c0, quad_r2
+    quad_features = [
+        ("quad_a2", "Quadratic coefficient a2", bin_count),
+        ("quad_b1", "Quadratic coefficient b1", bin_count),
+        ("quad_c0", "Quadratic coefficient c0", bin_count),
+        ("quad_r2", "Quadratic fit R²",         bin_count),
+    ]
+    for key, xlabel, bins_ in quad_features:
+        gate_q, metrics_q, rows_q,ctrl_q_plot, exp_q_plot = _gate_plot_and_classify_feature(
+            ctrl_stats, exp_stats, OutputFolder,
+            feature_key=key,
+            ok_key="quad_ok",
+            sensitivity=sensitivity,
+            correct_baseline_drift=correct_baseline_drift,
+            bin_count=bins_,
+            png_name=f"Histogram_{key}_Gate.png",
+            csv_name=f"deflection_summary_{key}_gate.csv",
+            xlabel=xlabel,
+            title=None
+        )
+        if gate_q is not None:
+            extra_plots[key] = os.path.join(OutputFolder, f"Histogram_{key}_Gate.png")
+                # ✅ NEW: store for report
+            feature_gates[key] = {
+            "ctrl": ctrl_q_plot,
+            "exp": exp_q_plot,
+            "rows": rows_q,
+            "metrics": metrics_q
+        }
+
+
+    # ---- Exponential parameter gates/histograms (CTRL vs EXP) ----
+    # Requires: exp_ok + a, tau_px, y_inf, r2_exp, y0_exp, A_exp, x0_exp
     ctrl_a_plot = np.array([], dtype=float)
     exp_a_plot  = np.array([], dtype=float)
     rows_a = []
@@ -158,33 +228,49 @@ def DefAnalysis_Dynamic(
     gate_a = None
 
     if fit_exponential_exp:
-        ctrl_a = _extract_valid_feature(ctrl_stats, "a")
-        exp_a  = _extract_valid_feature(exp_stats,  "a")
+        exp_features = [
+            ("a",      "Decay rate a (1/pixel)", 150),
+            ("tau_px", "Tau (pixels)",           150),
+            ("y_inf",  "Asymptotic y_inf (px)",  150),
+            ("r2_exp", "Exponential fit R²",     150),
+            ("A_exp",  "Exponential A (px)",     150),
+            ("y0_exp", "Exponential y0 (px)",    150),
+            ("x0_exp", "Exponential x0 (px)",    150),
+        ]
 
-        if len(ctrl_a) > 0 and len(exp_a) > 0:
-            # percentile clipping for plotting/gating robustness
-            ctrl_a_plot = percentile_clip(ctrl_a, low=0.1, high=99.9)
-            exp_a_plot  = percentile_clip(exp_a,  low=0.1, high=99.9)
-
-            gate_a, metrics_a, rows_a = _gate_plot_and_classify(
-                ctrl_a_plot,
-                exp_a_plot,
-                exp_stats,
-                OutputFolder,
+        for key, xlabel, bins_ in exp_features:
+            gate_e, metrics_e, rows_e,ctrl_e_plot, exp_e_plot = _gate_plot_and_classify_feature(
+                ctrl_stats, exp_stats, OutputFolder,
+                feature_key=key,
+                ok_key="exp_ok",
                 sensitivity=sensitivity,
                 correct_baseline_drift=correct_baseline_drift,
-                bin_count=150,
-                png_name="Histogram_a_Gate.png",
-                csv_name="deflection_summary_a_gate.csv",
-                feature_key="a",
-                xlabel="Decay rate a (1/pixel)",
-                title=f"Decay-rate gating: {metrics_a.get('mode_name','')}",
-                use_logx=False,
+                bin_count=bins_,
+                png_name=f"Histogram_{key}_Gate.png",
+                csv_name=f"deflection_summary_{key}_gate.csv",
+                xlabel=xlabel,
+                title=None
             )
-        else:
-            print("[WARN] Not enough valid exp fits to compute a-gate histogram.")
+            if gate_e is not None:
+                extra_plots[key] = os.path.join(OutputFolder, f"Histogram_{key}_Gate.png")
+                # ✅ NEW: store for report
+                feature_gates[key] = {
+                "ctrl": ctrl_e_plot,
+                "exp": exp_e_plot,
+                "rows": rows_e,
+                "metrics": metrics_e
+            }
+            
 
-        # Parameter histograms (exp + control)
+            # keep backward-compatible variables for report’s a-gate block
+            # keep backward-compatible variables for report’s a-gate block
+            if key == "a" and gate_e is not None:
+                gate_a = gate_e
+                metrics_a = metrics_e
+                rows_a = rows_e
+                ctrl_a_plot = ctrl_e_plot   # ✅ exact same arrays used for gate/hist
+                exp_a_plot  = exp_e_plot
+        # Existing exp-only parameter histograms + overlays (your old function)
         plot_exponential_parameter_histograms(
             exp_stats,
             out_folder=OutputFolder,
@@ -197,25 +283,54 @@ def DefAnalysis_Dynamic(
             bins=exp_hist_bins,
             r2_min=exp_r2_min_for_hists
         )
+    # Experiment diagnostics
+    plot_fit_diagnostics(
+    exp_stats,
+    out_folder=OutputFolder,
+    fits=("lin", "quad", "exp") if fit_exponential_exp else ("lin", "quad"),
+    bins=exp_hist_bins,
+    r2_min=exp_r2_min_for_hists,
+    n_examples=500,
+    save_per_id_overlays=False,
+    save_combined_overlay=True,
+    overlay_include_linear=True,
+)
 
+# Control diagnostics
+    plot_fit_diagnostics(
+    ctrl_stats,
+    out_folder=CntrlOutputFolder,
+    fits=("lin", "quad", "exp") if fit_exponential_exp else ("lin", "quad"),
+    bins=exp_hist_bins,
+    r2_min=exp_r2_min_for_hists,
+    n_examples=500,
+    save_per_id_overlays=False,
+    save_combined_overlay=True,
+    overlay_include_linear=True,
+)
     # -------------------------
     # Report
     # -------------------------
     summary = summarize_results(
         ctrl_slopes, exp_slopes, final_rows, metrics,
         ctrl_a=ctrl_a_plot, exp_a=exp_a_plot,
-        final_rows_a=rows_a, metrics_a=metrics_a
+        final_rows_a=rows_a, metrics_a=metrics_a,
+        feature_gates=feature_gates     # ✅ NEW
     )
     print_report(summary, OutputFolder)
+
+    plots_out = {
+        "histogram": os.path.join(OutputFolder, "Histogram_Analysis_StaticGate.png"),
+        "trajectories": os.path.join(OutputFolder, "Trajectories_Classified.png"),
+        "histogram_a": os.path.join(OutputFolder, "Histogram_a_Gate.png") if (fit_exponential_exp and gate_a is not None) else "",
+    }
+    # add all extra fit histograms
+    plots_out.update(extra_plots)
 
     return {
         "summary_csv": summary_csv,
         "gate_threshold": gate_threshold,
         "metrics": metrics,
         "summary": summary,
-        "plots": {
-            "histogram": os.path.join(OutputFolder, "Histogram_Analysis_StaticGate.png"),
-            "trajectories": os.path.join(OutputFolder, "Trajectories_Classified.png"),
-            "histogram_a": os.path.join(OutputFolder, "Histogram_a_Gate.png") if (fit_exponential_exp and gate_a is not None) else "",
-        }
+        "plots": plots_out
     }

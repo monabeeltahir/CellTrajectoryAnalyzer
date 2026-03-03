@@ -1,9 +1,9 @@
 import numpy as np
-from utility import _r2_score
+from .utility import _r2_score
 # -----------------------------
 # Quadratic fit (NEW): y = ax^2 + bx + c
 # -----------------------------
-def _fit_quadratic(x, y, deg):
+def _fit_quadratic(x, y, deg=2):
     x = np.asarray(x, dtype=float)
     y = np.asarray(y, dtype=float)
 

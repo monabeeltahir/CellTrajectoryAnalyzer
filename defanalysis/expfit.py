@@ -1,7 +1,7 @@
 
 import numpy as np
 from scipy.optimize import curve_fit
-from utility import _r2_score
+from .utility import _r2_score
 
 
 def _exp_saturating(x, y0, A, a, x0):
