@@ -182,11 +182,39 @@ def DefAnalysis_Dynamic(
         max_lines=max_traj_lines
     )
 
+    extra_plots = {}
+    feature_gates = {}   # ✅ collect everything here
+    ## Linear Other Features
+    lin_features = [
+    ("rmse_lin", "Linear fit RMSE", bin_count),
+    ("r2_lin", "Linear fit R²", bin_count),
+]
+    for key, xlabel, bins_ in lin_features:
+        gate_q, metrics_q, rows_q,ctrl_q_plot, exp_q_plot = _gate_plot_and_classify_feature(
+            ctrl_stats, exp_stats, OutputFolder,
+            feature_key=key,
+            ok_key="quad_ok",
+            sensitivity=sensitivity,
+            correct_baseline_drift=correct_baseline_drift,
+            bin_count=bins_,
+            png_name=f"Histogram_{key}_Gate.png",
+            csv_name=f"deflection_summary_{key}_gate.csv",
+            xlabel=xlabel,
+            title=None
+        )
+        if gate_q is not None:
+            extra_plots[key] = os.path.join(OutputFolder, f"Histogram_{key}_Gate.png")
+                # ✅ NEW: store for report
+            feature_gates[key] = {
+            "ctrl": ctrl_q_plot,
+            "exp": exp_q_plot,
+            "rows": rows_q,
+            "metrics": metrics_q
+        }
     # -------------------------
     # Extra histograms + gates for ALL fits
     # -------------------------
-    extra_plots = {}
-    feature_gates = {}   # ✅ collect everything here
+ 
     # ---- Quadratic parameter gates/histograms (CTRL vs EXP) ----
     # Requires: quad_ok + quad_a2, quad_b1, quad_c0, quad_r2
     quad_features = [
@@ -194,6 +222,7 @@ def DefAnalysis_Dynamic(
         ("quad_b1", "Quadratic coefficient b1", bin_count),
         ("quad_c0", "Quadratic coefficient c0", bin_count),
         ("quad_r2", "Quadratic fit R²",         bin_count),
+        ("rmse_quad", "Quadratic fit RMSE", bin_count),
     ]
     for key, xlabel, bins_ in quad_features:
         gate_q, metrics_q, rows_q,ctrl_q_plot, exp_q_plot = _gate_plot_and_classify_feature(

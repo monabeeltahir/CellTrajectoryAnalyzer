@@ -151,25 +151,25 @@ def print_report(summary, output_folder):
     print(f"Control Median:        {summary['ctrl_median']:.5f}")
     print(f"Control Noise Width:   {summary['noise_width']:.5f}")
 
-    # Backward-compatible exponential section
-    if "a_gate" in summary:
-        a = summary["a_gate"]
-        print("\n" + "-" * 40)
-        print("📉 EXPONENTIAL DECAY-RATE (a) GATING")
-        print("-" * 40)
-        print(f"⚙️  Mode: {a.get('mode_name','')}")
-        print(f"✅ Tracks with valid exp fit (CTRL/EXP): {a['ctrl_n']} / {a['exp_n']}")
-        print(f"❌ Deflected by a-gate (> {_fmt(a['gate_threshold'])}): "
-              f"{a['num_deflected']}/{a['num_total']} ({a['percent_deflected']:.3f}%)")
-        print("-" * 40)
-        print(f"Experiment a Mean:   {_fmt(a['exp_mean'])}")
-        print(f"Experiment a STD:    {_fmt(a['exp_std'])}")
-        print(f"Experiment a Median: {_fmt(a['exp_median'])}")
-        print("-" * 40)
-        print(f"Control a Mean:      {_fmt(a['ctrl_mean'])}")
-        print(f"Control a STD:       {_fmt(a['ctrl_std'])}")
-        print(f"Control a Median:    {_fmt(a['ctrl_median'])}")
-        print(f"Control Noise Width: {_fmt(a['noise_width'])}")
+    # # Backward-compatible exponential section
+    # if "a_gate" in summary:
+    #     a = summary["a_gate"]
+    #     print("\n" + "-" * 40)
+    #     print("📉 EXPONENTIAL DECAY-RATE (a) GATING")
+    #     print("-" * 40)
+    #     print(f"⚙️  Mode: {a.get('mode_name','')}")
+    #     print(f"✅ Tracks with valid exp fit (CTRL/EXP): {a['ctrl_n']} / {a['exp_n']}")
+    #     print(f"❌ Deflected by a-gate (> {_fmt(a['gate_threshold'])}): "
+    #           f"{a['num_deflected']}/{a['num_total']} ({a['percent_deflected']:.3f}%)")
+    #     print("-" * 40)
+    #     print(f"Experiment a Mean:   {_fmt(a['exp_mean'])}")
+    #     print(f"Experiment a STD:    {_fmt(a['exp_std'])}")
+    #     print(f"Experiment a Median: {_fmt(a['exp_median'])}")
+    #     print("-" * 40)
+    #     print(f"Control a Mean:      {_fmt(a['ctrl_mean'])}")
+    #     print(f"Control a STD:       {_fmt(a['ctrl_std'])}")
+    #     print(f"Control a Median:    {_fmt(a['ctrl_median'])}")
+    #     print(f"Control Noise Width: {_fmt(a['noise_width'])}")
 
     # NEW: Print any extra feature gates (quad, tau, y_inf, etc.)
     fg = summary.get("feature_gates", {})

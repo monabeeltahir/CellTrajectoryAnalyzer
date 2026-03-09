@@ -2,13 +2,14 @@ import os
 import pandas as pd
 import matplotlib.pyplot as plt
 import cv2
+import traceback
 
 from .tilt_ridge import estimate_tilt_mode
 from .tilt_sobel import estimate_tilt_from_sobel_edges, estimate_tilt_from_sobel_auto
 from .geometry import rotate_points
 from .tilt_sobel_simple import estimate_tilt_sobel_zonal
 from .tilt_scharr_ransac import estimate_tilt_scharr_ransac
-
+from .LineEdgeManual import AngleDrawer
 
 def TrajctoryPlot(
     min_frames=100,
@@ -18,7 +19,7 @@ def TrajctoryPlot(
     do_tilt_correction=True,
 
     # User-facing knobs (ALL dictated from here)
-    tilt_method="sobel_auto",        # "sobel_auto", "sobel", "ridge_mode"
+    tilt_method="manual",        # "sobel_auto", "sobel", "ridge_mode"
     tilt_roi="bottom",              # for "sobel": "top"/"bottom"; for ridge_mode: "top"/"bottom"/"both"
     tilt_mode="both_midline",        # used only when tilt_method="ridge_mode"
 
@@ -75,7 +76,7 @@ def TrajctoryPlot(
     if do_tilt_correction and gray_image_path:
         method = (tilt_method or "").strip().lower()
         roi = (tilt_roi or "bottom").strip().lower()
-
+        print("Tilt Method Envoked", method)
         if method == "sobel_auto":
             angle_deg, dbg = estimate_tilt_from_sobel_auto(
                 gray_image_path=gray_image_path,
@@ -156,6 +157,28 @@ def TrajctoryPlot(
                 close_len=30,
                 min_pts=20
                 )
+        elif method =="manual":
+            print(f"--- DEBUG: Attempting to process ---")
+            print(f"Path variable type: {type(gray_image_path)}")
+            print(f"Path value: {gray_image_path}")
+
+            try:
+                # 1. Check if it's a valid string path
+                if isinstance(gray_image_path, str):
+                    if not os.path.exists(gray_image_path):
+                        print("ERROR: The file path does not exist!")
+                    else:
+                        print("SUCCESS: File exists.")
+            
+                # 2. Initialize and Run
+                drawer = AngleDrawer(csv_path=FolderName+'/channel_tilts.csv')
+                angle_deg = drawer.run(gray_image_path)
+    
+                print(f"SUCCESS: Angle calculated as {angle_deg}")
+
+            except Exception as e:
+                print(f"CRITICAL ERROR: {e}")
+                traceback.print_exc()
         
 
         else:

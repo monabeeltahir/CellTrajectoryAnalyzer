@@ -1,24 +1,31 @@
 import numpy as np
-from .utility import _r2_score
+from .utility import _r2_score, _rmse
+
 # -----------------------------
 # Quadratic fit (NEW): y = ax^2 + bx + c
 # -----------------------------
-def _fit_quadratic(x, y, deg=2):
-    x = np.asarray(x, dtype=float)
-    y = np.asarray(y, dtype=float)
+def _fit_quadratic(x, y):
+    x = np.asarray(x, dtype=float).ravel()
+    y = np.asarray(y, dtype=float).ravel()
 
-    order = np.argsort(x)
-    x = x[order]
-    y = y[order]
+    mask = np.isfinite(x) & np.isfinite(y)
+    x = x[mask]
+    y = y[mask]
 
-    # np.polyfit returns [a, b, c] for deg=2
-    a2, b1, c0 = map(float, np.polyfit(x, y, deg=deg))
-    y_pred = (a2 * x**2) + (b1 * x) + c0
-    r2 = _r2_score(y, y_pred)
+    if len(x) < 3:
+        raise ValueError("too_few_points")
+
+    a2, b1, c0 = np.polyfit(x, y, 2)
+    y_pred = a2 * x**2 + b1 * x + c0
+
+    ss_res = np.sum((y - y_pred)**2)
+    ss_tot = np.sum((y - np.mean(y))**2) + 1e-12
+    r2 = 1 - ss_res / ss_tot
 
     return {
-        "a2": a2,
-        "b1": b1,
-        "c0": c0,
+        "a2": float(a2),
+        "b1": float(b1),
+        "c0": float(c0),
         "r2": float(r2),
+        "rmse": _rmse(y, y_pred),
     }

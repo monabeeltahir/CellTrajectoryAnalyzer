@@ -6,6 +6,7 @@ from .expfit import _fit_exp_saturating
 from .pfit import _fit_quadratic
 from .linfit import _fit_linear
 
+
 # -----------------------------
 # Registry: add new fits here later
 # Each fitter returns dict of params including r2
@@ -15,6 +16,7 @@ FIT_REGISTRY = {
     "exp": _fit_exp_saturating,
     "quad": _fit_quadratic,
 }
+
 
 def compute_track_stats(
     df,
@@ -95,11 +97,13 @@ def compute_track_stats(
             out["slope_inverted"] = float(-1.0 * out["lin_slope"])
             out["intercept"] = float(out["lin_intercept"])
             out["r2_lin"] = float(out["lin_r2"])
+            out["rmse_lin"] = float(out.get("lin_rmse", np.nan))
         else:
             out["slope_raw"] = np.nan
             out["slope_inverted"] = np.nan
             out["intercept"] = np.nan
             out["r2_lin"] = np.nan
+            out["rmse_lin"] = np.nan
 
         # Backward-compatible exp fields (optional, if you want same keys)
         if out.get("exp_ok", False):
@@ -124,11 +128,13 @@ def compute_track_stats(
             out["b1_quad"] = out.get("quad_b1", np.nan)
             out["c0_quad"] = out.get("quad_c0", np.nan)
             out["r2_quad"] = out.get("quad_r2", np.nan)
+            out["rmse_quad"] = float(out.get("quad_rmse", np.nan))
         else:
             out["a2_quad"] = np.nan
             out["b1_quad"] = np.nan
             out["c0_quad"] = np.nan
             out["r2_quad"] = np.nan
+            out["rmse_quad"] = np.nan
 
         track_stats.append(out)
 

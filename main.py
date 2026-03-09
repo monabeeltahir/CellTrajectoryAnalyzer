@@ -17,9 +17,9 @@ if __name__ == "__main__":
 
             # TrajctoryPlot(min_frames=150, FileName = videopath[:-4]+"/"+"id_tracking_trajectories.csv", FolderName=videopath[:-4], gray_image_path=videopath[:-4]+"/GrayImage.png", 
             # do_tilt_correction=True,   save_corrected_plot=True,  # IMPORTANT
-            # tilt_method="scharr_ransac",
-            # tilt_roi="both",              # for "sobel": "top"/"bottom"; for ridge_mode: "top"/"bottom"/"both"
-            # tilt_mode="both_midline",        # used only when tilt_method="ridge_mode"
+            # tilt_method="manual",
+            # tilt_roi="top",              # for "sobel": "top"/"bottom"; for ridge_mode: "top"/"bottom"/"both"
+            # tilt_mode="Line Drawn",        # used only when tilt_method="ridge_mode"
             # )
     for vids in videofillist:
         contrlvidpath = datapath[1]+vids 
