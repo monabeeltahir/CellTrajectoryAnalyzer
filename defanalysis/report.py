@@ -119,101 +119,136 @@ def summarize_results(
 
 
 
-
-
 def _fmt(x, nd=6):
     try:
-        if x is None or (isinstance(x, float) and np.isnan(x)):
+        if x is None:
+            return "nan"
+        if isinstance(x, (float, np.floating)) and np.isnan(x):
             return "nan"
         return f"{float(x):.{nd}g}"
     except Exception:
         return str(x)
 
+
+def _build_report_text(summary, output_folder):
+    lines = []
+
+    lines.append("")
+    lines.append("=" * 40)
+    lines.append("📊 FINAL STATISTICS REPORT")
+    lines.append("=" * 40)
+
+    lines.append(f"⚙️  Mode: {summary.get('mode_name','')}")
+    lines.append("-" * 40)
+    lines.append(f"✅ Total particles: {summary['num_total']}")
+    lines.append(f"❌ Deflected particles (> {summary['gate_threshold']:.4f}): {summary['num_deflected']}")
+    lines.append(f"📈 Percent deflected: {summary['percent_deflected']:.3f}%")
+    lines.append("-" * 40)
+    lines.append(f"Experiment Mean Slope: {summary['exp_mean']:.5f}")
+    lines.append(f"Experiment STD Slope:  {summary['exp_std']:.5f}")
+    lines.append(f"Experiment Median:     {summary['exp_median']:.5f}")
+    lines.append("-" * 40)
+    lines.append(f"Control Mean Slope:    {summary['ctrl_mean']:.5f}")
+    lines.append(f"Control STD Slope:     {summary['ctrl_std']:.5f}")
+    lines.append(f"Control Median:        {summary['ctrl_median']:.5f}")
+    lines.append(f"Control Noise Width:   {summary['noise_width']:.5f}")
+
+    # # Backward-compatible exponential a-gate block
+    # if "a_gate" in summary:
+    #     a = summary["a_gate"]
+    #     lines.append("")
+    #     lines.append("-" * 40)
+    #     lines.append("📉 EXPONENTIAL DECAY-RATE (a) GATING")
+    #     lines.append("-" * 40)
+    #     lines.append(f"⚙️  Mode: {a.get('mode_name','')}")
+    #     lines.append(f"✅ Tracks with valid exp fit (CTRL/EXP): {a['ctrl_n']} / {a['exp_n']}")
+    #     lines.append(
+    #         f"❌ Deflected by a-gate (> {_fmt(a['gate_threshold'])}): "
+    #         f"{a['num_deflected']}/{a['num_total']} ({a['percent_deflected']:.3f}%)"
+    #     )
+    #     lines.append("-" * 40)
+    #     lines.append(f"Experiment a Mean:   {_fmt(a['exp_mean'])}")
+    #     lines.append(f"Experiment a STD:    {_fmt(a['exp_std'])}")
+    #     lines.append(f"Experiment a Median: {_fmt(a['exp_median'])}")
+    #     lines.append("-" * 40)
+    #     lines.append(f"Control a Mean:      {_fmt(a['ctrl_mean'])}")
+    #     lines.append(f"Control a STD:       {_fmt(a['ctrl_std'])}")
+    #     lines.append(f"Control a Median:    {_fmt(a['ctrl_median'])}")
+    #     lines.append(f"Control Noise Width: {_fmt(a['noise_width'])}")
+
+    # Additional feature gates
+    fg = summary.get("feature_gates", {})
+    if isinstance(fg, dict) and len(fg) > 0:
+        lines.append("")
+        lines.append("-" * 40)
+        lines.append("🧩 ADDITIONAL FEATURE GATES")
+        lines.append("-" * 40)
+
+        for name, g in fg.items():
+            lines.append("")
+            lines.append(f"🔸 {name}")
+            lines.append(f"  Mode: {g.get('mode_name','')}")
+            lines.append(f"  Valid tracks (CTRL/EXP): {g['ctrl_n']} / {g['exp_n']}")
+            lines.append(f"  Gate: {_fmt(g['gate_threshold'])} | Noise width: {_fmt(g['noise_width'])}")
+            lines.append(f"  Deflected: {g['num_deflected']}/{g['num_total']} ({g['percent_deflected']:.3f}%)")
+            lines.append(
+                f"  EXP mean/median/std: "
+                f"{_fmt(g['exp_mean'])} / {_fmt(g['exp_median'])} / {_fmt(g['exp_std'])}"
+            )
+            lines.append(
+                f"  CTRL mean/median/std: "
+                f"{_fmt(g['ctrl_mean'])} / {_fmt(g['ctrl_median'])} / {_fmt(g['ctrl_std'])}"
+            )
+
+    lines.append("-" * 40)
+    lines.append(f"📂 Results saved to: {output_folder}")
+    lines.append("=" * 40)
+    lines.append("")
+
+    return "\n".join(lines)
+
+
 def print_report(summary, output_folder):
     os.makedirs(output_folder, exist_ok=True)
 
-    print("\n" + "=" * 40)
-    print("📊 FINAL STATISTICS REPORT")
-    print("=" * 40)
+    # ========================
+    # BUILD REPORT ONCE
+    # ========================
+    report_text = _build_report_text(summary, output_folder)
 
-    print(f"⚙️  Mode: {summary.get('mode_name','')}")
-    print("-" * 40)
-    print(f"✅ Total particles: {summary['num_total']}")
-    print(f"❌ Deflected particles (> {summary['gate_threshold']:.4f}): {summary['num_deflected']}")
-    print(f"📈 Percent deflected: {summary['percent_deflected']:.3f}%")
-    print("-" * 40)
-    print(f"Experiment Mean Slope: {summary['exp_mean']:.5f}")
-    print(f"Experiment STD Slope:  {summary['exp_std']:.5f}")
-    print(f"Experiment Median:     {summary['exp_median']:.5f}")
-    print("-" * 40)
-    print(f"Control Mean Slope:    {summary['ctrl_mean']:.5f}")
-    print(f"Control STD Slope:     {summary['ctrl_std']:.5f}")
-    print(f"Control Median:        {summary['ctrl_median']:.5f}")
-    print(f"Control Noise Width:   {summary['noise_width']:.5f}")
+    # ========================
+    # PRINT TO CONSOLE
+    # ========================
+    print(report_text)
 
-    # # Backward-compatible exponential section
-    # if "a_gate" in summary:
-    #     a = summary["a_gate"]
-    #     print("\n" + "-" * 40)
-    #     print("📉 EXPONENTIAL DECAY-RATE (a) GATING")
-    #     print("-" * 40)
-    #     print(f"⚙️  Mode: {a.get('mode_name','')}")
-    #     print(f"✅ Tracks with valid exp fit (CTRL/EXP): {a['ctrl_n']} / {a['exp_n']}")
-    #     print(f"❌ Deflected by a-gate (> {_fmt(a['gate_threshold'])}): "
-    #           f"{a['num_deflected']}/{a['num_total']} ({a['percent_deflected']:.3f}%)")
-    #     print("-" * 40)
-    #     print(f"Experiment a Mean:   {_fmt(a['exp_mean'])}")
-    #     print(f"Experiment a STD:    {_fmt(a['exp_std'])}")
-    #     print(f"Experiment a Median: {_fmt(a['exp_median'])}")
-    #     print("-" * 40)
-    #     print(f"Control a Mean:      {_fmt(a['ctrl_mean'])}")
-    #     print(f"Control a STD:       {_fmt(a['ctrl_std'])}")
-    #     print(f"Control a Median:    {_fmt(a['ctrl_median'])}")
-    #     print(f"Control Noise Width: {_fmt(a['noise_width'])}")
-
-    # NEW: Print any extra feature gates (quad, tau, y_inf, etc.)
-    fg = summary.get("feature_gates", {})
-    if isinstance(fg, dict) and len(fg) > 0:
-        print("\n" + "-" * 40)
-        print("🧩 ADDITIONAL FEATURE GATES")
-        print("-" * 40)
-
-        for name, g in fg.items():
-            print(f"\n🔸 {name}")
-            print(f"  Mode: {g.get('mode_name','')}")
-            print(f"  Valid tracks (CTRL/EXP): {g['ctrl_n']} / {g['exp_n']}")
-            print(f"  Gate: {_fmt(g['gate_threshold'])} | Noise width: {_fmt(g['noise_width'])}")
-            print(f"  Deflected: {g['num_deflected']}/{g['num_total']} ({g['percent_deflected']:.3f}%)")
-            print(f"  EXP mean/median/std: {_fmt(g['exp_mean'])} / {_fmt(g['exp_median'])} / {_fmt(g['exp_std'])}")
-            print(f"  CTRL mean/median/std: {_fmt(g['ctrl_mean'])} / {_fmt(g['ctrl_median'])} / {_fmt(g['ctrl_std'])}")
-
-    print("-" * 40)
-    print(f"📂 Results saved to: {output_folder}")
-    print("=" * 40 + "\n")
-
-    # Save text
+    # ========================
+    # SAVE TEXT VERSION
+    # ========================
     text_path = os.path.join(output_folder, "final_statistics_report.txt")
-    with open(text_path, "w") as f:
-        f.write("=" * 40 + "\n")
-        f.write("FINAL STATISTICS REPORT\n")
-        f.write("=" * 40 + "\n")
-        for k, v in summary.items():
-            f.write(f"{k}: {v}\n")
+    with open(text_path, "w", encoding="utf-8") as f:
+        f.write(report_text)
 
-    # Save CSV (flatten)
+    # ========================
+    # SAVE CSV VERSION
+    # ========================
     csv_path = os.path.join(output_folder, "final_statistics_report.csv")
+
     flat_summary = {}
     for key, value in summary.items():
         if isinstance(value, dict):
             for sub_key, sub_val in value.items():
-                flat_summary[f"{key}_{sub_key}"] = sub_val
+                if isinstance(sub_val, dict):
+                    for sub_sub_key, sub_sub_val in sub_val.items():
+                        flat_summary[f"{key}_{sub_key}_{sub_sub_key}"] = sub_sub_val
+                else:
+                    flat_summary[f"{key}_{sub_key}"] = sub_val
         else:
             flat_summary[key] = value
 
     flat_summary["timestamp"] = datetime.now().isoformat()
-    file_exists = os.path.isfile(csv_path)
 
-    with open(csv_path, "a", newline="") as csvfile:
+    file_exists = os.path.isfile(csv_path)
+    with open(csv_path, "a", newline="", encoding="utf-8") as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=flat_summary.keys())
         if not file_exists:
             writer.writeheader()

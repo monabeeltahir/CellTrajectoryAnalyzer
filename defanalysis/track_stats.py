@@ -5,7 +5,7 @@ import os
 from .expfit import _fit_exp_saturating
 from .pfit import _fit_quadratic
 from .linfit import _fit_linear
-
+from .curaturesmothed import _fit_curvature_smoothed
 
 # -----------------------------
 # Registry: add new fits here later
@@ -15,6 +15,7 @@ FIT_REGISTRY = {
     "lin": _fit_linear,
     "exp": _fit_exp_saturating,
     "quad": _fit_quadratic,
+    "curvature": _fit_curvature_smoothed,
 }
 
 
@@ -135,6 +136,17 @@ def compute_track_stats(
             out["c0_quad"] = np.nan
             out["r2_quad"] = np.nan
             out["rmse_quad"] = np.nan
+        # Curvature based estimation
+        if out.get("curvature_ok", False):
+            out["curvature_mean"] = float(out.get("curvature_mean", np.nan))
+            out["curvature_median"] = float(out.get("curvature_median", np.nan))
+            out["curvature_max"] = float(out.get("curvature_max", np.nan))
+            out["curvature_std"] = float(out.get("curvature_std", np.nan))
+        else:
+            out["curvature_mean"] = np.nan
+            out["curvature_median"] = np.nan
+            out["curvature_max"] = np.nan
+            out["curvature_std"] = np.nan
 
         track_stats.append(out)
 

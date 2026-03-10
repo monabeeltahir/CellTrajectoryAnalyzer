@@ -120,6 +120,11 @@ class AngleDrawer:
         if self.angle_deg is not None:
             self._save_to_csv()
             print(f"Saved angle: {self.angle_deg:.2f}° to {self.csv_path}")
+            # 2. Save the image with the drawn line
+            base_name, ext = os.path.splitext(image_path)
+            save_img_path = f"{base_name}_line_drawn{ext}"
+            cv2.imwrite(save_img_path, self.img_display)
+            print(f"Saved debug image to: {save_img_path}")
         else:
             print("Operation cancelled or no valid line drawn. Nothing saved.")
             

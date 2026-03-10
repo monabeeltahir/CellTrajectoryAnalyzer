@@ -9,7 +9,7 @@ from .gating import compute_gate, classify_tracks, percentile_clip
 from .plots import plot_histogram, plot_classified_trajectories
 from .report import summarize_results, print_report
 from .plot_expopara import plot_exponential_parameter_histograms
-
+from .plot_curvature import plot_curvature_overlays
 
 def _save_params(stats, out_folder, name):
     save_track_parameters(stats, os.path.join(out_folder, name))
@@ -124,10 +124,10 @@ def DefAnalysis_Dynamic(
     # -------------------------
     # Compute track stats
     # -------------------------
-    fits = ["lin"]
+    fits = ["lin", "quad", "curvature"]
     if fit_exponential_exp:
         fits.append("exp")
-    fits.append("quad")
+    
 
     ctrl_stats = compute_track_stats(
         df_ctrl,
@@ -146,7 +146,28 @@ def DefAnalysis_Dynamic(
     if not ctrl_stats or not exp_stats:
         print("Error: insufficient data.")
         return None
+    
 
+    ## Saving the curvature data to respective folders for the trajectory smoothing and curvature calculations
+    plot_curvature_overlays(
+    exp_stats,
+    out_folder=os.path.join(OutputFolder, "Curvature"),
+    n_examples=300,
+    window_length=9,
+    polyorder=3,
+    save_per_id=True,
+    save_combined=True,
+)
+
+    plot_curvature_overlays(
+    ctrl_stats,
+    out_folder=os.path.join(CntrlOutputFolder, "Curvature"),
+    n_examples=300,
+    window_length=9,
+    polyorder=3,
+    save_per_id=True,
+    save_combined=True,
+)
     # -------------------------
     # Save parameter CSVs
     # -------------------------
@@ -188,45 +209,78 @@ def DefAnalysis_Dynamic(
     lin_features = [
     ("rmse_lin", "Linear fit RMSE", bin_count),
     ("r2_lin", "Linear fit R²", bin_count),
+    ("slope_inverted", "Linear Slope (Deflection)", bin_count),
+    ("intercept", "Linear Intercept", bin_count),
 ]
     for key, xlabel, bins_ in lin_features:
-        gate_q, metrics_q, rows_q,ctrl_q_plot, exp_q_plot = _gate_plot_and_classify_feature(
-            ctrl_stats, exp_stats, OutputFolder,
-            feature_key=key,
-            ok_key="quad_ok",
-            sensitivity=sensitivity,
-            correct_baseline_drift=correct_baseline_drift,
-            bin_count=bins_,
-            png_name=f"Histogram_{key}_Gate.png",
-            csv_name=f"deflection_summary_{key}_gate.csv",
-            xlabel=xlabel,
-            title=None
-        )
-        if gate_q is not None:
+        gate_l, metrics_l, rows_l, ctrl_l_plot, exp_l_plot = _gate_plot_and_classify_feature(
+        ctrl_stats, exp_stats, OutputFolder +"/Linear/",
+        feature_key=key,
+        ok_key="lin_ok",   # ✅ linear features depend on linear fit
+        sensitivity=sensitivity,
+        correct_baseline_drift=correct_baseline_drift,
+        bin_count=bins_,
+        png_name=f"Histogram_{key}_Gate.png",
+        csv_name=f"deflection_summary_{key}_gate.csv",
+        xlabel=xlabel,
+        title=None
+    )
+
+        if gate_l is not None:
             extra_plots[key] = os.path.join(OutputFolder, f"Histogram_{key}_Gate.png")
-                # ✅ NEW: store for report
+
+        # store for report
             feature_gates[key] = {
-            "ctrl": ctrl_q_plot,
-            "exp": exp_q_plot,
-            "rows": rows_q,
-            "metrics": metrics_q
+            "ctrl": ctrl_l_plot,
+            "exp": exp_l_plot,
+            "rows": rows_l,
+            "metrics": metrics_l
         }
     # -------------------------
     # Extra histograms + gates for ALL fits
     # -------------------------
- 
+    curvature_features = [
+    ("curvature_mean", "Curvature mean", bin_count),
+    ("curvature_median", "Curvature median", bin_count),
+    ("curvature_max", "Curvature max", bin_count),
+    ("curvature_std", "Curvature std", bin_count),
+    ]
+
+    for key, xlabel, bins_ in curvature_features:
+        gate_c, metrics_c, rows_c, ctrl_c_plot, exp_c_plot = _gate_plot_and_classify_feature(
+        ctrl_stats, exp_stats, OutputFolder+"/Curvature/",
+        feature_key=key,
+        ok_key="curvature_ok",
+        sensitivity=sensitivity,
+        correct_baseline_drift=correct_baseline_drift,
+        bin_count=bins_,
+        png_name=f"Histogram_{key}_Gate.png",
+        csv_name=f"deflection_summary_{key}_gate.csv",
+        xlabel=xlabel,
+        title=None
+    )
+
+        if gate_c is not None:
+            extra_plots[key] = os.path.join(OutputFolder, f"Histogram_{key}_Gate.png")
+
+            feature_gates[key] = {
+            "ctrl": ctrl_c_plot,
+            "exp": exp_c_plot,
+            "rows": rows_c,
+            "metrics": metrics_c
+                }
     # ---- Quadratic parameter gates/histograms (CTRL vs EXP) ----
     # Requires: quad_ok + quad_a2, quad_b1, quad_c0, quad_r2
     quad_features = [
-        ("quad_a2", "Quadratic coefficient a2", bin_count),
-        ("quad_b1", "Quadratic coefficient b1", bin_count),
-        ("quad_c0", "Quadratic coefficient c0", bin_count),
-        ("quad_r2", "Quadratic fit R²",         bin_count),
+        ("a2_quad", "Quadratic coefficient a2", bin_count),
+        ("b1_quad", "Quadratic coefficient b1", bin_count),
+        ("c0_quad", "Quadratic coefficient c0", bin_count),
+        ("r2_quad", "Quadratic fit R²",         bin_count),
         ("rmse_quad", "Quadratic fit RMSE", bin_count),
     ]
     for key, xlabel, bins_ in quad_features:
         gate_q, metrics_q, rows_q,ctrl_q_plot, exp_q_plot = _gate_plot_and_classify_feature(
-            ctrl_stats, exp_stats, OutputFolder,
+            ctrl_stats, exp_stats, OutputFolder+"/Quad/",
             feature_key=key,
             ok_key="quad_ok",
             sensitivity=sensitivity,

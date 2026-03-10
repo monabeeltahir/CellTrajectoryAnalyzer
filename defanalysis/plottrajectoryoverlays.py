@@ -61,7 +61,7 @@ def plot_fit_diagnostics(
         "lin": {
             "ok_key": "lin_ok",
             "r2_key": "lin_r2",
-            "params": [("lin_slope", "slope"), ("lin_intercept", "intercept"), ("lin_r2", "R²")],
+            "params": [("lin_slope", "slope"), ("lin_intercept", "intercept"), ("lin_r2", "R²"), ("lin_rmse", "RMSE")],
             "predict": lambda x, t: _pred_lin(x, float(t["lin_slope"]), float(t["lin_intercept"])),
         },
         "exp": {
@@ -74,7 +74,7 @@ def plot_fit_diagnostics(
         "quad": {
             "ok_key": "quad_ok",
             "r2_key": "quad_r2",
-            "params": [("quad_a2", "a2"), ("quad_b1", "b1"), ("quad_c0", "c0"), ("quad_r2", "R²")],
+            "params": [("quad_a2", "a2"), ("quad_b1", "b1"), ("quad_c0", "c0"), ("quad_r2", "R²"), ("quad_rmse", "RMSE")],
             "predict": lambda x, t: _pred_quad(x, float(t["quad_a2"]), float(t["quad_b1"]), float(t["quad_c0"])),
         }
     }

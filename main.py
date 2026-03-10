@@ -4,9 +4,9 @@ from defanalysis import DefAnalysis_Dynamic
 # === Run the function ===
 if __name__ == "__main__":
     #videofilename = "No Magnetic Beads Cells 5uL_min.mp4"
-    datapath = ['C:/Users/mt1102/Box/Nabeel Tahir Meetings/Meetings/Weekly Meetings/Meeting Jan 2026/Experiment 1_14_2026/Sample 2/Stained/', 
-                'C:/Users/mt1102/Box/Nabeel Tahir Meetings/Meetings/Weekly Meetings/Meeting Jan 2026/Experiment 1_14_2026/Sample 2/Unstained/']
-    videofillist = ["S2 V1 2uL.mp4"]
+    datapath = ['C:/Users/mt1102/Box/Nabeel Tahir Meetings/Meetings/Weekly Meetings/Meeting Jan 2026/Experiment 1_14_2026/Sample 1/Stained/', 
+                'C:/Users/mt1102/Box/Nabeel Tahir Meetings/Meetings/Weekly Meetings/Meeting Jan 2026/Experiment 1_14_2026/Sample 1/Unstained/']
+    videofillist = ["S1 V1 2uL.mp4"]
     #videofillist = ["S1 V1 2uL.mp4","S1 V1 3uL.mp4", "S1 V2 3uL.mp4", "S1 V2 4uL.mp4", "S1 V2 5uL.mp4"]
     for i in range(2):
         print ("Running Path: ",  datapath[i])
@@ -17,8 +17,8 @@ if __name__ == "__main__":
 
             # TrajctoryPlot(min_frames=150, FileName = videopath[:-4]+"/"+"id_tracking_trajectories.csv", FolderName=videopath[:-4], gray_image_path=videopath[:-4]+"/GrayImage.png", 
             # do_tilt_correction=True,   save_corrected_plot=True,  # IMPORTANT
-            # tilt_method="manual",
-            # tilt_roi="top",              # for "sobel": "top"/"bottom"; for ridge_mode: "top"/"bottom"/"both"
+            # tilt_method="scharr_ransac",
+            # tilt_roi="both",              # for "sobel": "top"/"bottom"; for ridge_mode: "top"/"bottom"/"both"
             # tilt_mode="Line Drawn",        # used only when tilt_method="ridge_mode"
             # )
     for vids in videofillist:
