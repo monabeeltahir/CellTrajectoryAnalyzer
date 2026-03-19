@@ -155,7 +155,7 @@ def DefAnalysis_Dynamic(
     n_examples=300,
     window_length=9,
     polyorder=3,
-    save_per_id=True,
+    save_per_id=False,
     save_combined=True,
 )
 
@@ -165,7 +165,7 @@ def DefAnalysis_Dynamic(
     n_examples=300,
     window_length=9,
     polyorder=3,
-    save_per_id=True,
+    save_per_id=False,
     save_combined=True,
 )
     # -------------------------
@@ -244,6 +244,7 @@ def DefAnalysis_Dynamic(
     ("curvature_median", "Curvature median", bin_count),
     ("curvature_max", "Curvature max", bin_count),
     ("curvature_std", "Curvature std", bin_count),
+     ("curvature_p90", "Curvature Percentile", bin_count),
     ]
 
     for key, xlabel, bins_ in curvature_features:

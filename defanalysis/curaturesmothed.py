@@ -53,4 +53,5 @@ def _fit_curvature_smoothed(x, y, window_length=9, polyorder=3):
         "median": float(np.median(kappa)),
         "max": float(np.max(kappa)),
         "std": float(np.std(kappa)),
+        "p90": float(np.percentile(kappa, 90)),
     }
