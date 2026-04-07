@@ -37,7 +37,8 @@ def _extract_feature(stats, key, ok_key=None):
 def _gate_plot_and_classify_feature(
     ctrl_stats,
     exp_stats,
-    out_folder,
+    exp_out_folder,
+    ctrl_out_folder,
     *,
     feature_key,
     ok_key=None,
@@ -46,6 +47,7 @@ def _gate_plot_and_classify_feature(
     bin_count,
     png_name,
     csv_name,
+    ctrl_csv_name=None,
     xlabel=None,
     title=None,
     clip_low=0.1,
@@ -54,19 +56,19 @@ def _gate_plot_and_classify_feature(
 ):
     """
     For a given feature:
-      - extract feature arrays from ctrl/exp
-      - percentile clip for robustness
-      - compute gate
-      - plot histogram with your plot_histogram()
-      - classify exp tracks using feature_key
-      - save per-feature summary CSV
+      - compute gate (CTRL vs EXP)
+      - save histogram (EXP folder)
+      - classify BOTH exp + ctrl
+      - save exp CSV → exp_out_folder
+      - save ctrl CSV → ctrl_out_folder
     """
+
     ctrl = _extract_feature(ctrl_stats, feature_key, ok_key=ok_key)
     exp  = _extract_feature(exp_stats,  feature_key, ok_key=ok_key)
 
     if ctrl.size == 0 or exp.size == 0:
         print(f"[WARN] Not enough data for feature '{feature_key}' (ok_key={ok_key}). Skipping.")
-        return None, None, []
+        return None, None, [], [], None, None
 
     ctrl_plot = percentile_clip(ctrl, low=clip_low, high=clip_high)
     exp_plot  = percentile_clip(exp,  low=clip_low, high=clip_high)
@@ -77,9 +79,16 @@ def _gate_plot_and_classify_feature(
         correct_baseline_drift=correct_baseline_drift
     )
 
+    # Ensure directories exist
+    ensure_dir(exp_out_folder)
+    ensure_dir(ctrl_out_folder)
+
+    # -------------------------
+    # Save histogram (keep in experiment folder)
+    # -------------------------
     plot_histogram(
         ctrl_plot, exp_plot, gate, metrics,
-        out_path=os.path.join(out_folder, png_name),
+        out_path=os.path.join(exp_out_folder, png_name),
         bin_count=bin_count,
         correct_baseline_drift=correct_baseline_drift,
         xlabel=xlabel or feature_key,
@@ -90,10 +99,27 @@ def _gate_plot_and_classify_feature(
         prc=(0.5, 99.5),
     )
 
-    rows = classify_tracks(exp_stats, gate, feature_key=feature_key)
-    pd.DataFrame(rows).to_csv(os.path.join(out_folder, csv_name), index=False)
+    # -------------------------
+    # Experiment classification
+    # -------------------------
+    exp_rows = classify_tracks(exp_stats, gate, feature_key=feature_key)
+    pd.DataFrame(exp_rows).to_csv(
+        os.path.join(exp_out_folder, csv_name), index=False
+    )
 
-    return gate, metrics, rows, ctrl_plot, exp_plot 
+    # -------------------------
+    # Control classification
+    # -------------------------
+    if ctrl_csv_name is None:
+        base, ext = os.path.splitext(csv_name)
+        ctrl_csv_name = f"{base}_control{ext}"
+
+    ctrl_rows = classify_tracks(ctrl_stats, gate, feature_key=feature_key)
+    pd.DataFrame(ctrl_rows).to_csv(
+        os.path.join(ctrl_out_folder, ctrl_csv_name), index=False
+    )
+
+    return gate, metrics, exp_rows, ctrl_rows, ctrl_plot, exp_plot
 
 
 def DefAnalysis_Dynamic(
@@ -213,18 +239,19 @@ def DefAnalysis_Dynamic(
     ("intercept", "Linear Intercept", bin_count),
 ]
     for key, xlabel, bins_ in lin_features:
-        gate_l, metrics_l, rows_l, ctrl_l_plot, exp_l_plot = _gate_plot_and_classify_feature(
-        ctrl_stats, exp_stats, OutputFolder +"/Linear/",
-        feature_key=key,
-        ok_key="lin_ok",   # ✅ linear features depend on linear fit
-        sensitivity=sensitivity,
-        correct_baseline_drift=correct_baseline_drift,
-        bin_count=bins_,
-        png_name=f"Histogram_{key}_Gate.png",
-        csv_name=f"deflection_summary_{key}_gate.csv",
-        xlabel=xlabel,
-        title=None
-    )
+        gate_l, metrics_l, rows_l, ctrl_rows_l, ctrl_l_plot, exp_l_plot = _gate_plot_and_classify_feature(
+    ctrl_stats, exp_stats,
+    OutputFolder + "/Linear/",
+    CntrlOutputFolder + "/Linear/",
+    feature_key=key,
+    ok_key="lin_ok",
+    sensitivity=sensitivity,
+    correct_baseline_drift=correct_baseline_drift,
+    bin_count=bins_,
+    png_name=f"Histogram_{key}_Gate.png",
+    csv_name=f"deflection_summary_{key}_gate.csv",
+    xlabel=xlabel,
+)
 
         if gate_l is not None:
             extra_plots[key] = os.path.join(OutputFolder, f"Histogram_{key}_Gate.png")
@@ -248,18 +275,19 @@ def DefAnalysis_Dynamic(
     ]
 
     for key, xlabel, bins_ in curvature_features:
-        gate_c, metrics_c, rows_c, ctrl_c_plot, exp_c_plot = _gate_plot_and_classify_feature(
-        ctrl_stats, exp_stats, OutputFolder+"/Curvature/",
-        feature_key=key,
-        ok_key="curvature_ok",
-        sensitivity=sensitivity,
-        correct_baseline_drift=correct_baseline_drift,
-        bin_count=bins_,
-        png_name=f"Histogram_{key}_Gate.png",
-        csv_name=f"deflection_summary_{key}_gate.csv",
-        xlabel=xlabel,
-        title=None
-    )
+        gate_c, metrics_c, rows_c, ctrl_rows_c, ctrl_c_plot, exp_c_plot = _gate_plot_and_classify_feature(
+    ctrl_stats, exp_stats,
+    OutputFolder + "/Curvature/",
+    CntrlOutputFolder + "/Curvature/",
+    feature_key=key,
+    ok_key="curvature_ok",
+    sensitivity=sensitivity,
+    correct_baseline_drift=correct_baseline_drift,
+    bin_count=bins_,
+    png_name=f"Histogram_{key}_Gate.png",
+    csv_name=f"deflection_summary_{key}_gate.csv",
+    xlabel=xlabel,
+)
 
         if gate_c is not None:
             extra_plots[key] = os.path.join(OutputFolder, f"Histogram_{key}_Gate.png")
@@ -280,18 +308,19 @@ def DefAnalysis_Dynamic(
         ("rmse_quad", "Quadratic fit RMSE", bin_count),
     ]
     for key, xlabel, bins_ in quad_features:
-        gate_q, metrics_q, rows_q,ctrl_q_plot, exp_q_plot = _gate_plot_and_classify_feature(
-            ctrl_stats, exp_stats, OutputFolder+"/Quad/",
-            feature_key=key,
-            ok_key="quad_ok",
-            sensitivity=sensitivity,
-            correct_baseline_drift=correct_baseline_drift,
-            bin_count=bins_,
-            png_name=f"Histogram_{key}_Gate.png",
-            csv_name=f"deflection_summary_{key}_gate.csv",
-            xlabel=xlabel,
-            title=None
-        )
+        gate_q, metrics_q, rows_q, ctrl_rows_q, ctrl_q_plot, exp_q_plot = _gate_plot_and_classify_feature(
+    ctrl_stats, exp_stats,
+    OutputFolder + "/Quad/",
+    CntrlOutputFolder + "/Quad/",
+    feature_key=key,
+    ok_key="quad_ok",
+    sensitivity=sensitivity,
+    correct_baseline_drift=correct_baseline_drift,
+    bin_count=bins_,
+    png_name=f"Histogram_{key}_Gate.png",
+    csv_name=f"deflection_summary_{key}_gate.csv",
+    xlabel=xlabel,
+)
         if gate_q is not None:
             extra_plots[key] = os.path.join(OutputFolder, f"Histogram_{key}_Gate.png")
                 # ✅ NEW: store for report
@@ -374,10 +403,10 @@ def DefAnalysis_Dynamic(
     fits=("lin", "quad", "exp") if fit_exponential_exp else ("lin", "quad"),
     bins=exp_hist_bins,
     r2_min=exp_r2_min_for_hists,
-    n_examples=500,
+    n_examples=30,
     save_per_id_overlays=False,
     save_combined_overlay=True,
-    overlay_include_linear=True,
+    overlay_include_linear=False,
 )
 
 # Control diagnostics
@@ -387,10 +416,10 @@ def DefAnalysis_Dynamic(
     fits=("lin", "quad", "exp") if fit_exponential_exp else ("lin", "quad"),
     bins=exp_hist_bins,
     r2_min=exp_r2_min_for_hists,
-    n_examples=500,
+    n_examples=30,
     save_per_id_overlays=False,
     save_combined_overlay=True,
-    overlay_include_linear=True,
+    overlay_include_linear=False,
 )
     # -------------------------
     # Report
