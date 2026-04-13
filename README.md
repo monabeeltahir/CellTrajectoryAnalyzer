@@ -27,7 +27,7 @@ The codebase is organized around reusable modules for tracking (`tracking/`), tr
 
 The `assets/` folder is ready for media you want to showcase in the project page. A preview card is included now, and you can later replace it with a GIF or update the README to point to your exported video.
 
-![Cell flow preview](assets/video/cell-flow-preview.svg)
+![Cell flow preview](assets/video/cell-flow-preview.mp4)
 
 Suggested media targets:
 
