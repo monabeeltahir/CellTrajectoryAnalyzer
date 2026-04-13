@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760" fill="none">
+  <defs>
+    <linearGradient id="bgTrajClassified" x1="80" y1="80" x2="1120" y2="690" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#301934"/>
+      <stop offset="1" stop-color="#5B2132"/>
+    </linearGradient>
+  </defs>
+  <rect x="16" y="16" width="1168" height="728" rx="28" fill="url(#bgTrajClassified)"/>
+  <rect x="90" y="100" width="1020" height="470" rx="22" fill="#3B1F40" stroke="#FDA4AF" stroke-width="2"/>
+  <path d="M190 500C300 470 380 430 470 400C620 350 730 320 1000 220" stroke="#60A5FA" stroke-width="6" stroke-linecap="round"/>
+  <path d="M230 300C350 330 430 350 540 380C680 420 780 450 1030 520" stroke="#F87171" stroke-width="6" stroke-linecap="round"/>
+  <path d="M210 410C340 395 450 372 560 340C690 301 810 268 1020 210" stroke="#60A5FA" stroke-width="6" stroke-dasharray="12 10" stroke-linecap="round"/>
+  <path d="M240 270C370 315 470 352 590 395C730 445 840 482 1035 545" stroke="#FCA5A5" stroke-width="6" stroke-dasharray="12 10" stroke-linecap="round"/>
+  <rect x="90" y="610" width="24" height="24" rx="6" fill="#60A5FA"/>
+  <text x="128" y="629" fill="#F8FAFC" font-family="Segoe UI, Arial, sans-serif" font-size="24">Straight</text>
+  <rect x="250" y="610" width="24" height="24" rx="6" fill="#F87171"/>
+  <text x="288" y="629" fill="#F8FAFC" font-family="Segoe UI, Arial, sans-serif" font-size="24">Deflected</text>
+  <text x="90" y="680" fill="#FFE4E6" font-family="Segoe UI, Arial, sans-serif" font-size="40" font-weight="700">Classified Trajectories</text>
+  <text x="90" y="720" fill="#F8C8D3" font-family="Segoe UI, Arial, sans-serif" font-size="24">Suggested replacement: Trajectories_Classified.png</text>
+</svg>

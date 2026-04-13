@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760" fill="none">
+  <defs>
+    <linearGradient id="bgHistStatic" x1="100" y1="70" x2="1100" y2="700" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2B1C12"/>
+      <stop offset="1" stop-color="#6C3A13"/>
+    </linearGradient>
+  </defs>
+  <rect x="16" y="16" width="1168" height="728" rx="28" fill="url(#bgHistStatic)"/>
+  <rect x="90" y="100" width="1020" height="470" rx="22" fill="#3C2618" stroke="#FCD34D" stroke-width="2"/>
+  <rect x="170" y="430" width="40" height="90" fill="#86EFAC"/>
+  <rect x="220" y="380" width="40" height="140" fill="#86EFAC"/>
+  <rect x="270" y="320" width="40" height="200" fill="#86EFAC"/>
+  <rect x="320" y="290" width="40" height="230" fill="#86EFAC"/>
+  <rect x="480" y="420" width="40" height="100" fill="#60A5FA"/>
+  <rect x="530" y="340" width="40" height="180" fill="#60A5FA"/>
+  <rect x="580" y="250" width="40" height="270" fill="#60A5FA"/>
+  <rect x="630" y="280" width="40" height="240" fill="#F87171"/>
+  <rect x="680" y="350" width="40" height="170" fill="#F87171"/>
+  <rect x="730" y="410" width="40" height="110" fill="#F87171"/>
+  <line x1="620" y1="150" x2="620" y2="540" stroke="#FFF7ED" stroke-width="5" stroke-dasharray="12 12"/>
+  <text x="90" y="650" fill="#FFF7ED" font-family="Segoe UI, Arial, sans-serif" font-size="40" font-weight="700">Histogram Analysis with Static Gate</text>
+  <text x="90" y="695" fill="#F8D9A3" font-family="Segoe UI, Arial, sans-serif" font-size="24">Suggested replacement: Histogram_Analysis_StaticGate.png</text>
+</svg>
