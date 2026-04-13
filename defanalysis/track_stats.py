@@ -142,11 +142,13 @@ def compute_track_stats(
             out["curvature_median"] = float(out.get("curvature_median", np.nan))
             out["curvature_max"] = float(out.get("curvature_max", np.nan))
             out["curvature_std"] = float(out.get("curvature_std", np.nan))
+            out["curvature_p90"] = float(out.get("curvature_p90", np.nan))
         else:
             out["curvature_mean"] = np.nan
             out["curvature_median"] = np.nan
             out["curvature_max"] = np.nan
             out["curvature_std"] = np.nan
+            out["curvature_p90"] = np.nan
 
         track_stats.append(out)
 
