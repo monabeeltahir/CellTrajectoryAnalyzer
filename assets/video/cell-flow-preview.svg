@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="760" viewBox="0 0 1400 760" fill="none">
+  <defs>
+    <linearGradient id="bgVideo" x1="80" y1="60" x2="1320" y2="700" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#081C24"/>
+      <stop offset="1" stop-color="#134E4A"/>
+    </linearGradient>
+  </defs>
+  <rect x="16" y="16" width="1368" height="728" rx="30" fill="url(#bgVideo)"/>
+  <rect x="70" y="90" width="1260" height="500" rx="24" fill="#0F2F36" stroke="#7DD3C7" stroke-width="2"/>
+  <circle cx="330" cy="250" r="44" fill="#D9F99D" fill-opacity="0.95"/>
+  <circle cx="520" cy="340" r="31" fill="#FDE68A" fill-opacity="0.95"/>
+  <circle cx="710" cy="230" r="38" fill="#93C5FD" fill-opacity="0.95"/>
+  <circle cx="940" cy="320" r="27" fill="#F9A8D4" fill-opacity="0.95"/>
+  <circle cx="1080" cy="250" r="34" fill="#C4B5FD" fill-opacity="0.95"/>
+  <path d="M280 250H1140" stroke="#DCFCE7" stroke-width="5" stroke-dasharray="14 14" opacity="0.35"/>
+  <circle cx="700" cy="340" r="72" fill="#051A1F" fill-opacity="0.58"/>
+  <polygon points="680,305 680,375 745,340" fill="#ECFEFF"/>
+  <text x="70" y="655" fill="#ECFEFF" font-family="Segoe UI, Arial, sans-serif" font-size="46" font-weight="700">Cell Flow Video Showcase</text>
+  <text x="70" y="705" fill="#B8E6DE" font-family="Segoe UI, Arial, sans-serif" font-size="28">Replace this preview with a GIF or update README.md to point to your exported MP4.</text>
+</svg>
