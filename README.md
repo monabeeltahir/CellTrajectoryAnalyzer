@@ -25,16 +25,12 @@ The codebase is organized around reusable modules for tracking (`tracking/`), tr
 
 ## Demo Preview
 
-The `assets/` folder is ready for media you want to showcase in the project page. A preview card is included now, and you can later replace it with a GIF or update the README to point to your exported video.
+The project now includes an inline GIF preview plus the original recorded demo video:
 
-![Cell flow preview](assets/video/cell-flow-preview.svg)
+- ![Cell flow preview](assets/video/cell-flow-preview.gif)
+- [Watch the cell-flow video](assets/video/cell-flow-preview.mp4)
 
-Suggested media targets:
-
-- `assets/video/cell-flow-preview.gif` for an inline animated preview
-- `assets/video/cell-flow-demo.mp4` for the full video
-
-See [assets/README.md](assets/README.md) for the exact folder layout and suggested filenames.
+The GIF gives a quick visual of cells moving through the channel, while the MP4 keeps the higher-quality full recording available in the repo.
 
 ## What This Project Does
 
@@ -108,23 +104,19 @@ Typical outputs from the current workflow include:
 
 ## Example Visual Outputs
 
-These placeholder cards are already wired into the repo structure so you can swap in your real figures later.
+These are the actual trajectory and histogram figures currently stored in `assets/`.
 
 | Trajectory overview | Tilt-corrected trajectories |
 | --- | --- |
-| ![Original trajectories placeholder](assets/plots/trajectories/original-trajectories.svg) | ![Corrected trajectories placeholder](assets/plots/trajectories/corrected-trajectories.svg) |
+| ![Original trajectories](assets/plots/trajectories/Original_trajectories_plot.png) | ![Corrected trajectories](assets/plots/trajectories/filtered_trajectories_corrected_plot.png) |
 
 | Classified trajectories | Histogram-based gating |
 | --- | --- |
-| ![Classified trajectories placeholder](assets/plots/trajectories/classified-trajectories.svg) | ![Static gate histogram placeholder](assets/plots/histograms/static-gate-histogram.svg) |
-
-| Feature histogram |
-| --- |
-| ![Feature histogram placeholder](assets/plots/histograms/feature-gate-histogram.svg) |
+| ![Classified trajectories](assets/plots/trajectories/deflection_classified_trajectories.png) | ![Static gate histogram](assets/plots/histograms/Histogram_Analysis_StaticGate.png) |
 
 ## Notes
 
 - `tracking/pipeline.py` is the main entry point for video tracking and annotated output generation.
 - `trajectoryplot/trajectory.py` handles trajectory filtering, tilt estimation, and corrected trajectory plots.
 - `defanalysis/deflection_analysis.py` handles gating, fit diagnostics, histogram analysis, and classification outputs.
-- The `assets/` folder was added as a presentation layer for README media, separate from raw experiment outputs.
+- The `assets/` folder now contains the tracked-cell video preview plus representative trajectory and histogram outputs used by this README.
