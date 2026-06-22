@@ -38,6 +38,7 @@ def plot_fit_diagnostics(
     save_per_id_overlays=False,
     save_combined_overlay=True,
     overlay_include_linear=False,  # when plotting exp/quad overlays, also show linear if available
+    TiltType=""
 ):
     """
     One function for:
@@ -124,7 +125,7 @@ def plot_fit_diagnostics(
             plt.xlabel(label)
             plt.ylabel("Density")
             plt.tight_layout()
-            plt.savefig(os.path.join(fit_dir, f"{fit}_{key}_hist.png"), dpi=300)
+            plt.savefig(os.path.join(fit_dir, f"{TiltType}_Tilt_{key}_hist.png"), dpi=300)
             plt.close()
 
     # ==========================================
@@ -221,7 +222,7 @@ def plot_fit_diagnostics(
             plt.title(f"{fit.upper()} overlays (top {min(n_examples, len(sorted_tracks))} tracks)")
             plt.legend()
             plt.tight_layout()
-            plt.savefig(os.path.join(fit_dir, f"overlay_{fit}.png"), dpi=300)
+            plt.savefig(os.path.join(fit_dir, f"{TiltType}_Tilt_overlay_{fit}.png"), dpi=300)
             plt.close()
 
     print(f"Saved fit parameter histograms + overlays to: {out_folder}")

@@ -135,7 +135,7 @@ def DefAnalysis_Dynamic(
     fit_exponential_exp=True,
     exp_min_x_span_px=30,
     exp_r2_min_for_hists=None,
-    exp_hist_bins=500
+    exp_hist_bins=500, TiltType="No"
 ):
     ensure_dir(OutputFolder)
     ensure_dir(CntrlOutputFolder)
@@ -197,8 +197,8 @@ def DefAnalysis_Dynamic(
     # -------------------------
     # Save parameter CSVs
     # -------------------------
-    _save_params(ctrl_stats, CntrlOutputFolder, "track_parameters_control.csv")
-    _save_params(exp_stats,  OutputFolder,      "track_parameters_experiment.csv")
+    _save_params(ctrl_stats, CntrlOutputFolder, f"{TiltType}_Tilt_track_parameters_control.csv")
+    _save_params(exp_stats,  OutputFolder,     f"{TiltType}_Tilt_track_parameters_experiment.csv")
 
     # -------------------------
     # Primary gating on slope (existing)
@@ -213,19 +213,19 @@ def DefAnalysis_Dynamic(
     )
 
     final_rows = classify_tracks(exp_stats, gate_threshold)
-    summary_csv = os.path.join(OutputFolder, "deflection_summary_dynamic.csv")
+    summary_csv = os.path.join(OutputFolder, f"{TiltType}_Tilt_deflection_summary_dynamic.csv")
     save_summary_csv(final_rows, summary_csv)
 
     plot_histogram(
         ctrl_slopes, exp_slopes, gate_threshold, metrics,
-        out_path=os.path.join(OutputFolder, "Histogram_Analysis_StaticGate.png"),
+        out_path=os.path.join(OutputFolder, f"{TiltType}_Tilt_Histogram_Analysis_StaticGate.png"),
         bin_count=bin_count,
         correct_baseline_drift=correct_baseline_drift
     )
 
     plot_classified_trajectories(
         exp_stats, gate_threshold,
-        out_path=os.path.join(OutputFolder, "Trajectories_Classified.png"),
+        out_path=os.path.join(OutputFolder, f"{TiltType}_Tilt_Trajectories_Classified.png"),
         max_lines=max_traj_lines
     )
 
@@ -248,8 +248,8 @@ def DefAnalysis_Dynamic(
     sensitivity=sensitivity,
     correct_baseline_drift=correct_baseline_drift,
     bin_count=bins_,
-    png_name=f"Histogram_{key}_Gate.png",
-    csv_name=f"deflection_summary_{key}_gate.csv",
+    png_name=f"{TiltType}_Tilt_Histogram_{key}_Gate.png",
+    csv_name=f"{TiltType}_Tilt_deflection_summary_{key}_gate.csv",
     xlabel=xlabel,
 )
 
@@ -284,8 +284,8 @@ def DefAnalysis_Dynamic(
     sensitivity=sensitivity,
     correct_baseline_drift=correct_baseline_drift,
     bin_count=bins_,
-    png_name=f"Histogram_{key}_Gate.png",
-    csv_name=f"deflection_summary_{key}_gate.csv",
+    png_name=f"{TiltType}_Tilt_Histogram_{key}_Gate.png",
+    csv_name=f"{TiltType}_Tilt_deflection_summary_{key}_gate.csv",
     xlabel=xlabel,
 )
 
@@ -317,8 +317,8 @@ def DefAnalysis_Dynamic(
     sensitivity=sensitivity,
     correct_baseline_drift=correct_baseline_drift,
     bin_count=bins_,
-    png_name=f"Histogram_{key}_Gate.png",
-    csv_name=f"deflection_summary_{key}_gate.csv",
+    png_name=f"{TiltType}_Tilt_Histogram_{key}_Gate.png",
+    csv_name=f"{TiltType}_Tilt_deflection_summary_{key}_gate.csv",
     xlabel=xlabel,
 )
         if gate_q is not None:
@@ -359,8 +359,8 @@ def DefAnalysis_Dynamic(
                 sensitivity=sensitivity,
                 correct_baseline_drift=correct_baseline_drift,
                 bin_count=bins_,
-                png_name=f"Histogram_{key}_Gate.png",
-                csv_name=f"deflection_summary_{key}_gate.csv",
+                png_name=f"{TiltType}_Tilt_Histogram_{key}_Gate.png",
+                csv_name=f"{TiltType}_Tilt_deflection_summary_{key}_gate.csv",
                 xlabel=xlabel,
                 title=None
             )
@@ -407,6 +407,7 @@ def DefAnalysis_Dynamic(
     save_per_id_overlays=False,
     save_combined_overlay=True,
     overlay_include_linear=False,
+    TiltType=TiltType
 )
 
 # Control diagnostics
@@ -420,6 +421,7 @@ def DefAnalysis_Dynamic(
     save_per_id_overlays=False,
     save_combined_overlay=True,
     overlay_include_linear=False,
+    TiltType=TiltType
 )
     # -------------------------
     # Report
@@ -430,7 +432,7 @@ def DefAnalysis_Dynamic(
         final_rows_a=rows_a, metrics_a=metrics_a,
         feature_gates=feature_gates     # ✅ NEW
     )
-    print_report(summary, OutputFolder)
+    print_report(summary, OutputFolder, TiltType)
 
     plots_out = {
         "histogram": os.path.join(OutputFolder, "Histogram_Analysis_StaticGate.png"),

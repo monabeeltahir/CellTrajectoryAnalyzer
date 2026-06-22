@@ -208,7 +208,7 @@ def _build_report_text(summary, output_folder):
     return "\n".join(lines)
 
 
-def print_report(summary, output_folder):
+def print_report(summary, output_folder, TiltType):
     os.makedirs(output_folder, exist_ok=True)
 
     # ========================
@@ -224,14 +224,14 @@ def print_report(summary, output_folder):
     # ========================
     # SAVE TEXT VERSION
     # ========================
-    text_path = os.path.join(output_folder, "final_statistics_report.txt")
+    text_path = os.path.join(output_folder, TiltType+"_Tilt_final_statistics_report.txt")
     with open(text_path, "w", encoding="utf-8") as f:
         f.write(report_text)
 
     # ========================
     # SAVE CSV VERSION
     # ========================
-    csv_path = os.path.join(output_folder, "final_statistics_report.csv")
+    csv_path = os.path.join(output_folder, TiltType+"_Tilt_final_statistics_report.csv")
 
     flat_summary = {}
     for key, value in summary.items():

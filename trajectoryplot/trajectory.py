@@ -16,7 +16,7 @@ def TrajctoryPlot(
     FileName="id_tracking_trajectories.csv",
     FolderName="",
     gray_image_path="",
-    do_tilt_correction=True,
+    do_tilt_correction=False,
 
     # User-facing knobs (ALL dictated from here)
     tilt_method="manual",        # "sobel_auto", "sobel", "ridge_mode"
@@ -172,7 +172,7 @@ def TrajctoryPlot(
             
                 # 2. Initialize and Run
                 drawer = AngleDrawer(csv_path=FolderName+'/channel_tilts.csv')
-                angle_deg = drawer.run(gray_image_path)
+                angle_deg = -1*drawer.run(gray_image_path)
     
                 print(f"SUCCESS: Angle calculated as {angle_deg}")
 
@@ -207,7 +207,7 @@ def TrajctoryPlot(
         df_corrected["center_y"] = y_corr
         df_corrected["tilt_angle_deg"] = angle_deg
 
-        corrected_csv_path = os.path.join(out_dir, "filtered_trajectories_corrected.csv")
+        corrected_csv_path = os.path.join(out_dir, f"filtered_trajectories_{tilt_method}_corrected.csv")
         df_corrected.to_csv(corrected_csv_path, index=False)
 
         print(f"Saved: {filtered_csv_path}")
@@ -245,7 +245,7 @@ def TrajctoryPlot(
         plt.ylabel("Y Position (pixels) [corrected]", fontsize=18)
         #plt.legend(bbox_to_anchor=(1.05, 1), loc="upper left", fontsize=8, ncol=3)
         plt.tight_layout()
-        plt.savefig(os.path.join(out_dir, "filtered_trajectories_corrected_plot.png"), dpi=300)
+        plt.savefig(os.path.join(out_dir, f"filtered_trajectories_{tilt_method}_corrected_plot.png"), dpi=300)
         plt.close()
 
     # === Plot original trajectories ===
